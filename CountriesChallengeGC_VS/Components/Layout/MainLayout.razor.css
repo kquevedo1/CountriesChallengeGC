@@ -5,7 +5,7 @@
 
 .app-header {
     height: 84px;
-    background-color: #1f5c94;
+    background-color: #f5f5f5;
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -16,15 +16,21 @@
 .app-brand {
     position: absolute;
     left: 38px;
-    font-size: 52px;
-    line-height: 1;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.app-brand-image {
+    height:130px;
+    width: auto;
+    object-fit: contain;
 }
 
 .app-title {
     font-size: 58px;
     line-height: 1;
     font-weight: 500;
+    color: #1f5c94;
 }
 
 .app-body {
@@ -47,8 +53,11 @@
 
 @media (max-width: 1200px) {
     .app-brand {
-        font-size: 32px;
         left: 20px;
+    }
+
+    .app-brand-image {
+        height: 44px;
     }
 
     .app-title {
@@ -69,6 +78,10 @@
     .app-brand {
         position: static;
         margin-right: 20px;
+    }
+
+    .app-brand-image {
+        height: 36px;
     }
 
     .app-title {
