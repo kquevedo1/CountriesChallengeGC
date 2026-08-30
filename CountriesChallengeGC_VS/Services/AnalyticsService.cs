@@ -20,6 +20,8 @@ public class AnalyticsService(CountriesDbContext dbContext) : IAnalyticsService
             return Array.Empty<CountryAggregationDto>();
         }
 
+        var yearFilter = years.Select(y => (short)y).ToArray();
+
         var countries = request.Countries
             .Where(c => !string.IsNullOrWhiteSpace(c))
             .Select(c => c.Trim().ToUpperInvariant())
@@ -31,47 +33,32 @@ public class AnalyticsService(CountriesDbContext dbContext) : IAnalyticsService
             return Array.Empty<CountryAggregationDto>();
         }
 
-        var baseQuery = dbContext.PopulationObservations
+        var baseData = await dbContext.PopulationObservations
             .AsNoTracking()
-            .Include(x => x.GeographicEntity)
-            .Where(x => countries.Contains(x.GeographicEntity.Alpha3Code.ToUpper())
-                        && years.Contains(x.Year)
+            .Where(x => countries.Contains(x.GeographicEntity.Alpha3Code)
+                        && yearFilter.Contains(x.Year)
                         && x.PopulationValue.HasValue)
-            .GroupBy(x => new { x.GeographicEntity.Alpha3Code, x.GeographicEntity.NameEnglish });
+            .Select(x => new
+            {
+                x.GeographicEntity.Alpha3Code,
+                x.GeographicEntity.NameEnglish,
+                Value = x.PopulationValue!.Value
+            })
+            .ToListAsync(ct);
 
-        IQueryable<CountryAggregationDto> aggregationQuery = request.Criteria switch
+        var grouped = baseData.GroupBy(x => new { x.Alpha3Code, x.NameEnglish });
+
+        var result = request.Criteria switch
         {
-            AggregationCriteria.Sum => baseQuery.Select(g => new CountryAggregationDto(
-                g.Key.Alpha3Code,
-                g.Key.NameEnglish,
-                g.Sum(x => (double?)x.PopulationValue))),
-
-            AggregationCriteria.Avg => baseQuery.Select(g => new CountryAggregationDto(
-                g.Key.Alpha3Code,
-                g.Key.NameEnglish,
-                g.Average(x => (double?)x.PopulationValue))),
-
-            AggregationCriteria.Max => baseQuery.Select(g => new CountryAggregationDto(
-                g.Key.Alpha3Code,
-                g.Key.NameEnglish,
-                g.Max(x => (double?)x.PopulationValue))),
-
-            AggregationCriteria.Min => baseQuery.Select(g => new CountryAggregationDto(
-                g.Key.Alpha3Code,
-                g.Key.NameEnglish,
-                g.Min(x => (double?)x.PopulationValue))),
-
-            _ => baseQuery.Select(g => new CountryAggregationDto(
-                g.Key.Alpha3Code,
-                g.Key.NameEnglish,
-                g.Sum(x => (double?)x.PopulationValue)))
+            AggregationCriteria.Sum => grouped.Select(g => new CountryAggregationDto(g.Key.Alpha3Code, g.Key.NameEnglish, g.Sum(x => (double)x.Value))).ToList(),
+            AggregationCriteria.Avg => grouped.Select(g => new CountryAggregationDto(g.Key.Alpha3Code, g.Key.NameEnglish, g.Average(x => (double)x.Value))).ToList(),
+            AggregationCriteria.Max => grouped.Select(g => new CountryAggregationDto(g.Key.Alpha3Code, g.Key.NameEnglish, g.Max(x => (double)x.Value))).ToList(),
+            AggregationCriteria.Min => grouped.Select(g => new CountryAggregationDto(g.Key.Alpha3Code, g.Key.NameEnglish, g.Min(x => (double)x.Value))).ToList(),
+            _ => grouped.Select(g => new CountryAggregationDto(g.Key.Alpha3Code, g.Key.NameEnglish, g.Sum(x => (double)x.Value))).ToList()
         };
 
-        aggregationQuery = request.Order == SortOrder.Asc
-            ? aggregationQuery.OrderBy(x => x.AggregatedValue)
-            : aggregationQuery.OrderByDescending(x => x.AggregatedValue);
-
-        var result = await aggregationQuery.ToListAsync(ct);
-        return result;
+        return request.Order == SortOrder.Asc
+            ? result.OrderBy(x => x.AggregatedValue).ToList()
+            : result.OrderByDescending(x => x.AggregatedValue).ToList();
     }
 }

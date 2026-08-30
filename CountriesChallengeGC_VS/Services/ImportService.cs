@@ -10,6 +10,24 @@ public class ImportService(CountriesDbContext dbContext) : IImportService
 {
     private const int MaxDetailLength = 500;
 
+    public async Task<IReadOnlyList<ImportLogDto>> GetImportLogsAsync(int take, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var safeTake = take <= 0 ? 50 : Math.Min(take, 200);
+
+        return await dbContext.DataSources
+            .AsNoTracking()
+            .OrderByDescending(x => x.LoadedAt)
+            .Take(safeTake)
+            .Select(x => new ImportLogDto(
+                x.LoadedAt,
+                x.SourceName,
+                x.Status,
+                x.Details))
+            .ToListAsync(ct);
+    }
+
     public async Task<ImportResult> ImportCountriesAsync(string filePath, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();

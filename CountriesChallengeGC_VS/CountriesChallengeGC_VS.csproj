@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Components\Contexto\MockUp\" />
+    <Folder Include="Components\Img\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,6 +10,12 @@ public record ImportResult(
     int Errors,
     IReadOnlyList<string> Messages);
 
+public record ImportLogDto(
+    DateTime LoadedAt,
+    string SourceName,
+    string Status,
+    string? Details);
+
 public record PagedResult<T>(
     IReadOnlyList<T> Items,
     int TotalCount,
