@@ -1,10 +1,16 @@
 using CountriesChallengeGC_VS.Components;
+using CountriesChallengeGC_VS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
+builder.Services.AddScoped<IPopulationService, PopulationService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 var app = builder.Build();
 
