@@ -22,6 +22,10 @@
     color: #5a5a5a;
 }
 
+.mud-alert {
+    white-space: pre-wrap;
+}
+
 @media (max-width: 1200px) {
     .header-row {
         flex-direction: column;

@@ -42,7 +42,7 @@
             <MudTd>@context.Alpha3Code</MudTd>
             <MudTd>@context.Year</MudTd>
             <MudTd>@context.IndicatorCode</MudTd>
-            <MudTd>@(context.PopulationValue?.ToString("N0") ?? "N/D")</MudTd>
+            <MudTd>@(context.PopulationValue?.ToString("N0") ?? "0")</MudTd>
         </RowTemplate>
         <NoRecordsContent>
             <MudText Class="empty-message">Sin datos para los filtros seleccionados.</MudText>

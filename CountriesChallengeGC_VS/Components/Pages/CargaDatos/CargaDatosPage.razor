@@ -11,10 +11,27 @@
     </div>
 
     <MudStack Row="true" Spacing="2">
-        <CsvPickerButton Label="" ButtonText="CARGAR PAÍSES" FileChanged="OnCountriesFileSelected" />
-        <CsvPickerButton Label="" ButtonText="CARGAR POBLACIÓN" FileChanged="OnPopulationFileSelected" />
+        <CsvPickerButton Label="" ButtonText="CARGAR PAÍSES" LoadingText="CARGANDO PAÍSES..." IsLoading="@_isLoadingCountries" Disabled="@IsAnyLoading" FileChanged="OnCountriesFileSelected" />
+        <CsvPickerButton Label="" ButtonText="CARGAR POBLACIÓN" LoadingText="CARGANDO POBLACIÓN..." IsLoading="@_isLoadingPopulation" Disabled="@IsAnyLoading" FileChanged="OnPopulationFileSelected" />
     </MudStack>
 </div>
+
+@if (IsAnyLoading)
+{
+    <MudPaper Elevation="1" Class="pa-3 mb-3">
+        <MudStack Spacing="1">
+            <MudText Typo="Typo.body2">Procesando archivo, por favor espera...</MudText>
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        </MudStack>
+    </MudPaper>
+}
+
+@if (!string.IsNullOrWhiteSpace(_lastMessage))
+{
+    <MudAlert Severity="@(_lastSuccess ? Severity.Success : Severity.Error)" Dense="true" Class="mb-3">
+        @_lastMessage
+    </MudAlert>
+}
 
 <MudPaper Elevation="1" Class="pa-2">
     <MudTable Items="_logs" Dense="true" Hover="true">
@@ -38,6 +55,16 @@
 
 @code {
     private readonly List<ImportLogRow> _logs = [];
+    private bool _isLoadingCountries;
+    private bool _isLoadingPopulation;
+    private bool _lastSuccess;
+    private string? _lastMessage;
+    private bool IsAnyLoading => _isLoadingCountries || _isLoadingPopulation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistoryAsync();
+    }
 
     private async Task OnCountriesFileSelected(IBrowserFile? file)
     {
@@ -46,8 +73,17 @@
             return;
         }
 
-        var result = await ImportFromBrowserFileAsync(file, true);
-        AddLog(result);
+        _isLoadingCountries = true;
+        _lastMessage = null;
+        try
+        {
+            var result = await ImportFromBrowserFileAsync(file, true);
+            await RefreshHistoryAndFeedbackAsync(result);
+        }
+        finally
+        {
+            _isLoadingCountries = false;
+        }
     }
 
     private async Task OnPopulationFileSelected(IBrowserFile? file)
@@ -57,30 +93,72 @@
             return;
         }
 
-        var result = await ImportFromBrowserFileAsync(file, false);
-        AddLog(result);
+        _isLoadingPopulation = true;
+        _lastMessage = null;
+        try
+        {
+            var result = await ImportFromBrowserFileAsync(file, false);
+            await RefreshHistoryAndFeedbackAsync(result);
+        }
+        finally
+        {
+            _isLoadingPopulation = false;
+        }
     }
 
     private async Task<ImportResult> ImportFromBrowserFileAsync(IBrowserFile file, bool isCountries)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{file.Name}");
 
-        await using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-        await using var fs = File.Create(tempPath);
-        await stream.CopyToAsync(fs);
+        try
+        {
+            await using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
+            await using (var fs = File.Create(tempPath))
+            {
+                await stream.CopyToAsync(fs);
+            }
 
-        return isCountries
-            ? await ImportService.ImportCountriesAsync(tempPath, CancellationToken.None)
-            : await ImportService.ImportPopulationAsync(tempPath, CancellationToken.None);
+            return isCountries
+                ? await ImportService.ImportCountriesAsync(tempPath, CancellationToken.None)
+                : await ImportService.ImportPopulationAsync(tempPath, CancellationToken.None);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
+            catch
+            {
+            }
+        }
     }
 
-    private void AddLog(ImportResult result)
+    private async Task RefreshHistoryAndFeedbackAsync(ImportResult result)
     {
-        _logs.Insert(0, new ImportLogRow(
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-            result.SourceName,
-            result.IsSuccess ? "Exitosa" : "Fallida",
-            result.Messages.Count > 0 ? string.Join(" | ", result.Messages) : "Sin detalle"));
+        _lastSuccess = result.IsSuccess;
+        _lastMessage = result.Messages.Count > 0
+            ? string.Join(" | ", result.Messages)
+            : (result.IsSuccess ? "Carga completada correctamente." : "Carga finalizada con errores.");
+
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        _logs.Clear();
+        var logs = await ImportService.GetImportLogsAsync(100, CancellationToken.None);
+        foreach (var log in logs)
+        {
+            _logs.Add(new ImportLogRow(
+                log.LoadedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
+                log.SourceName,
+                log.Status,
+                string.IsNullOrWhiteSpace(log.Details) ? "Sin detalle" : log.Details));
+        }
     }
 
     private record ImportLogRow(string Date, string Source, string Status, string Detail);

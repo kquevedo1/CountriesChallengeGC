@@ -1,19 +1,27 @@
 @page "/"
 @using CountriesChallengeGC_VS.Components.Pages.Inicio.Components
+@inject ICountryService CountryService
+@inject IPopulationService PopulationService
+@inject IImportService ImportService
 
 <PageTitle>Inicio</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@_errorMessage</MudAlert>
+}
 
 <MudText Typo="Typo.h3" Class="page-title mb-6">Resumen del estado de carga y consulta</MudText>
 
 <MudGrid Class="mb-4">
     <MudItem xs="12" md="4">
-        <MetricCard Title="Entidades geográficas" Value="0" Subtitle="Pendiente de carga" />
+        <MetricCard Title="Entidades geográficas" Value="@_entitiesCountText" Subtitle="@_entitiesSubtitle" />
     </MudItem>
     <MudItem xs="12" md="4">
-        <MetricCard Title="Observaciones de población" Value="0" Subtitle="Pendiente de carga" />
+        <MetricCard Title="Observaciones de población" Value="@_populationCountText" Subtitle="@_populationSubtitle" />
     </MudItem>
     <MudItem xs="12" md="4">
-        <MetricCard Title="Última carga" Value="Sin ejecuciones" Subtitle="Estado no disponible" />
+        <MetricCard Title="Última carga" Value="@_lastLoadValue" Subtitle="@_lastLoadSubtitle" />
     </MudItem>
 </MudGrid>
 
@@ -25,3 +33,40 @@
         <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/analitica" StartIcon="@Icons.Material.Filled.QueryStats">IR A ANALÍTICA</MudButton>
     </MudStack>
 </MudPaper>
+
+@code {
+    private string _entitiesCountText = "0";
+    private string _entitiesSubtitle = "Pendiente de carga";
+    private string _populationCountText = "0";
+    private string _populationSubtitle = "Pendiente de carga";
+    private string _lastLoadValue = "Sin ejecuciones";
+    private string _lastLoadSubtitle = "Estado no disponible";
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _errorMessage = null;
+
+            var countriesResult = await CountryService.GetCountriesAsync(new CountryFilter(null, null, null, 1, 1), CancellationToken.None);
+            _entitiesCountText = countriesResult.TotalCount.ToString("N0");
+            _entitiesSubtitle = countriesResult.TotalCount > 0 ? "Registros cargados" : "Pendiente de carga";
+
+            var populationResult = await PopulationService.GetPopulationByCountryAsync(new PopulationFilter(null, null, null, 1, 1), CancellationToken.None);
+            _populationCountText = populationResult.TotalCount.ToString("N0");
+            _populationSubtitle = populationResult.TotalCount > 0 ? "Observaciones registradas" : "Pendiente de carga";
+
+            var lastLog = (await ImportService.GetImportLogsAsync(1, CancellationToken.None)).FirstOrDefault();
+            if (lastLog is not null)
+            {
+                _lastLoadValue = lastLog.LoadedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+                _lastLoadSubtitle = $"Estado: {lastLog.Status}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"No se pudo cargar el resumen inicial. Detalle: {ex.Message}";
+        }
+    }
+}
