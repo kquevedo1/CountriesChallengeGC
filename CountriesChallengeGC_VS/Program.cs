@@ -1,5 +1,7 @@
 using CountriesChallengeGC_VS.Components;
+using CountriesChallengeGC_VS.Data;
 using CountriesChallengeGC_VS.Services;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
+
+builder.Services.AddDbContext<CountriesDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
