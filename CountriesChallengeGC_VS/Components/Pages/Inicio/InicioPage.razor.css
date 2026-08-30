@@ -1,0 +1,18 @@
+.page-title {
+    font-size: 60px;
+    font-weight: 500;
+}
+
+.actions-title {
+    font-size: 36px;
+}
+
+@media (max-width: 1200px) {
+    .page-title {
+        font-size: 40px;
+    }
+
+    .actions-title {
+        font-size: 28px;
+    }
+}

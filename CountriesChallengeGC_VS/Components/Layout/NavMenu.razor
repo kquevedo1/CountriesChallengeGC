@@ -1,30 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">CountriesChallengeGC_VS</a>
-    </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+﻿<MudNavMenu Class="pt-4 px-2">
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
+    <MudNavLink Href="/carga-datos" Icon="@Icons.Material.Filled.UploadFile">Carga de datos</MudNavLink>
+    <MudNavLink Href="/paises" Icon="@Icons.Material.Filled.Public">Países</MudNavLink>
+    <MudNavLink Href="/poblacion" Icon="@Icons.Material.Filled.Groups">Población</MudNavLink>
+    <MudNavLink Href="/analitica" Icon="@Icons.Material.Filled.QueryStats">Analítica</MudNavLink>
+</MudNavMenu>
 

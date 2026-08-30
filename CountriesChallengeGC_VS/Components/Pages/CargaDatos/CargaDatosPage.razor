@@ -1,0 +1,87 @@
+@page "/carga-datos"
+@using CountriesChallengeGC_VS.Components.Pages.CargaDatos.Components
+@inject IImportService ImportService
+
+<PageTitle>Carga de datos</PageTitle>
+
+<div class="header-row mb-6">
+    <div>
+        <MudText Typo="Typo.h3" Class="page-title">Carga de datos CSV</MudText>
+        <MudText Class="page-subtitle">Procesa los archivos de países y población</MudText>
+    </div>
+
+    <MudStack Row="true" Spacing="2">
+        <CsvPickerButton Label="" ButtonText="CARGAR PAÍSES" FileChanged="OnCountriesFileSelected" />
+        <CsvPickerButton Label="" ButtonText="CARGAR POBLACIÓN" FileChanged="OnPopulationFileSelected" />
+    </MudStack>
+</div>
+
+<MudPaper Elevation="1" Class="pa-2">
+    <MudTable Items="_logs" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Fecha</MudTh>
+            <MudTh>Fuente</MudTh>
+            <MudTh>Estado</MudTh>
+            <MudTh>Detalle</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Fecha">@context.Date</MudTd>
+            <MudTd DataLabel="Fuente">@context.Source</MudTd>
+            <MudTd DataLabel="Estado">@context.Status</MudTd>
+            <MudTd DataLabel="Detalle">@context.Detail</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="empty-message">Aún no hay cargas ejecutadas.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private readonly List<ImportLogRow> _logs = [];
+
+    private async Task OnCountriesFileSelected(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            return;
+        }
+
+        var result = await ImportFromBrowserFileAsync(file, true);
+        AddLog(result);
+    }
+
+    private async Task OnPopulationFileSelected(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            return;
+        }
+
+        var result = await ImportFromBrowserFileAsync(file, false);
+        AddLog(result);
+    }
+
+    private async Task<ImportResult> ImportFromBrowserFileAsync(IBrowserFile file, bool isCountries)
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{file.Name}");
+
+        await using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        await using var fs = File.Create(tempPath);
+        await stream.CopyToAsync(fs);
+
+        return isCountries
+            ? await ImportService.ImportCountriesAsync(tempPath, CancellationToken.None)
+            : await ImportService.ImportPopulationAsync(tempPath, CancellationToken.None);
+    }
+
+    private void AddLog(ImportResult result)
+    {
+        _logs.Insert(0, new ImportLogRow(
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+            result.SourceName,
+            result.IsSuccess ? "Exitosa" : "Fallida",
+            result.Messages.Count > 0 ? string.Join(" | ", result.Messages) : "Sin detalle"));
+    }
+
+    private record ImportLogRow(string Date, string Source, string Status, string Detail);
+}

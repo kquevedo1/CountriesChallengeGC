@@ -1,0 +1,11 @@
+<MudPaper Elevation="1" Class="metric-card pa-4">
+    <MudText Class="metric-title">@Title</MudText>
+    <MudText Class="metric-value">@Value</MudText>
+    <MudText Class="metric-subtitle">@Subtitle</MudText>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Subtitle { get; set; } = string.Empty;
+}

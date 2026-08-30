@@ -1,0 +1,76 @@
+@page "/paises"
+@inject ICountryService CountryService
+
+<PageTitle>Países</PageTitle>
+
+<MudText Typo="Typo.h3" Class="page-title">Países</MudText>
+<MudText Class="page-subtitle mb-6">Consulta y filtra el catálogo de entidades geográficas.</MudText>
+
+<MudPaper Elevation="1" Class="pa-3 mb-3">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_alpha2Code" Placeholder="Alpha-2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_alpha3Code" Placeholder="Alpha-3" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_name" Placeholder="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Spacing="1" Class="mt-1">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="SearchAsync">BUSCAR</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" OnClick="ClearAsync">LIMPIAR</MudButton>
+    </MudStack>
+</MudPaper>
+
+<MudPaper Elevation="1" Class="pa-2">
+    <MudTable Items="_countries" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Alpha-2</MudTh>
+            <MudTh>Alpha-3</MudTh>
+            <MudTh>Nombre (EN)</MudTh>
+            <MudTh>Nombre (ES)</MudTh>
+            <MudTh>Tipo</MudTh>
+            <MudTh>ISO país</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Alpha2Code</MudTd>
+            <MudTd>@context.Alpha3Code</MudTd>
+            <MudTd>@context.NameEnglish</MudTd>
+            <MudTd>@context.NameSpanish</MudTd>
+            <MudTd>@context.EntityType</MudTd>
+            <MudTd>@(context.IsIsoCountry ? "Sí" : "No")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="empty-message">Sin datos para los filtros seleccionados.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private string? _alpha2Code;
+    private string? _alpha3Code;
+    private string? _name;
+    private IReadOnlyList<CountryDto> _countries = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        var result = await CountryService.GetCountriesAsync(new CountryFilter(_alpha2Code, _alpha3Code, _name, 1, 100), CancellationToken.None);
+        _countries = result.Items;
+    }
+
+    private async Task ClearAsync()
+    {
+        _alpha2Code = null;
+        _alpha3Code = null;
+        _name = null;
+        await SearchAsync();
+    }
+}

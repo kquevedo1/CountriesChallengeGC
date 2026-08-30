@@ -1,0 +1,27 @@
+@page "/"
+@using CountriesChallengeGC_VS.Components.Pages.Inicio.Components
+
+<PageTitle>Inicio</PageTitle>
+
+<MudText Typo="Typo.h3" Class="page-title mb-6">Resumen del estado de carga y consulta</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="4">
+        <MetricCard Title="Entidades geográficas" Value="0" Subtitle="Pendiente de carga" />
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MetricCard Title="Observaciones de población" Value="0" Subtitle="Pendiente de carga" />
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MetricCard Title="Última carga" Value="Sin ejecuciones" Subtitle="Estado no disponible" />
+    </MudItem>
+</MudGrid>
+
+<MudPaper Elevation="1" Class="pa-4">
+    <MudText Class="actions-title mb-3">Acciones rápidas</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/carga-datos" StartIcon="@Icons.Material.Filled.UploadFile">CARGAR DATOS</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/paises" StartIcon="@Icons.Material.Filled.Public">VER PAÍSES</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/analitica" StartIcon="@Icons.Material.Filled.QueryStats">IR A ANALÍTICA</MudButton>
+    </MudStack>
+</MudPaper>

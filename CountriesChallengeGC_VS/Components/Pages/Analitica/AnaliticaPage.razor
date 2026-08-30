@@ -1,0 +1,76 @@
+@page "/analitica"
+@inject IAnalyticsService AnalyticsService
+
+<PageTitle>Analítica</PageTitle>
+
+<MudText Typo="Typo.h3"  Class="page-title">Analítica de población</MudText>
+<MudText Class="page-subtitle mb-6">Consulta por países, años, criterio y orden.</MudText>
+
+<MudPaper Elevation="1" Class="pa-3 mb-3">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="_countriesText" Placeholder="Países (Alpha-3 separados por coma)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="_yearsText" Placeholder="Años (ej. 2018,2019,2020)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="AggregationCriteria" Label="Criterio" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_criteria">
+                <MudSelectItem T="AggregationCriteria" Value="AggregationCriteria.Sum">Sum</MudSelectItem>
+                <MudSelectItem T="AggregationCriteria" Value="AggregationCriteria.Avg">Avg</MudSelectItem>
+                <MudSelectItem T="AggregationCriteria" Value="AggregationCriteria.Max">Max</MudSelectItem>
+                <MudSelectItem T="AggregationCriteria" Value="AggregationCriteria.Min">Min</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="SortOrder" Label="Orden" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="_order">
+                <MudSelectItem T="SortOrder" Value="SortOrder.Desc">Desc</MudSelectItem>
+                <MudSelectItem T="SortOrder" Value="SortOrder.Asc">Asc</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Class="mt-1" OnClick="SearchAsync">CONSULTAR</MudButton>
+</MudPaper>
+
+<MudPaper Elevation="1" Class="pa-2">
+    <MudTable Items="_result" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Alpha-3</MudTh>
+            <MudTh>País</MudTh>
+            <MudTh>Valor agregado</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Alpha3Code</MudTd>
+            <MudTd>@context.CountryName</MudTd>
+            <MudTd>@(context.AggregatedValue?.ToString("N2") ?? "N/D")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="empty-message">Sin resultados para los criterios ingresados.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private string? _countriesText;
+    private string? _yearsText;
+    private AggregationCriteria _criteria = AggregationCriteria.Sum;
+    private SortOrder _order = SortOrder.Desc;
+    private IReadOnlyList<CountryAggregationDto> _result = [];
+
+    private async Task SearchAsync()
+    {
+        var countries = (_countriesText ?? string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToArray();
+
+        var years = (_yearsText ?? string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(y => int.TryParse(y, out var parsed) ? parsed : -1)
+            .Where(y => y > 0)
+            .ToArray();
+
+        var request = new AggregationRequest(countries, years, _criteria, _order);
+        _result = await AnalyticsService.GetAggregatedPopulationAsync(request, CancellationToken.None);
+    }
+}

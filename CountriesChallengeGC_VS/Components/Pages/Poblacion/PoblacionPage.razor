@@ -1,0 +1,83 @@
+@page "/poblacion"
+@inject IPopulationService PopulationService
+@inject ICountryService CountryService
+
+<PageTitle>Población</PageTitle>
+
+<MudText Typo="Typo.h3" Class="page-title">Población por país</MudText>
+<MudText Class="page-subtitle mb-6">Consulta por país y rango de años.</MudText>
+
+<MudPaper Elevation="1" Class="pa-3 mb-3">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudSelect T="string" @bind-Value="_alpha3Code" Label="Alpha-3" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                @foreach (var alpha3 in _alpha3Codes)
+                {
+                    <MudSelectItem T="string" Value="@alpha3">@alpha3</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudNumericField T="int?" @bind-Value="_fromYear" Label="Año desde" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1900" Max="2100" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudNumericField T="int?" @bind-Value="_toYear" Label="Año hasta" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1900" Max="2100" />
+        </MudItem>
+    </MudGrid>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Class="mt-1" OnClick="SearchAsync">CONSULTAR</MudButton>
+</MudPaper>
+
+<MudPaper Elevation="1" Class="pa-2">
+    <MudTable Items="_populationRows" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>País</MudTh>
+            <MudTh>Alpha-3</MudTh>
+            <MudTh>Año</MudTh>
+            <MudTh>Indicador</MudTh>
+            <MudTh>Población</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.CountryName</MudTd>
+            <MudTd>@context.Alpha3Code</MudTd>
+            <MudTd>@context.Year</MudTd>
+            <MudTd>@context.IndicatorCode</MudTd>
+            <MudTd>@(context.PopulationValue?.ToString("N0") ?? "N/D")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="empty-message">Sin datos para los filtros seleccionados.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private string? _alpha3Code;
+    private int? _fromYear = 2000;
+    private int? _toYear = 2020;
+    private IReadOnlyList<PopulationDto> _populationRows = [];
+    private IReadOnlyList<string> _alpha3Codes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlpha3CodesAsync();
+        await SearchAsync();
+    }
+
+    private async Task LoadAlpha3CodesAsync()
+    {
+        var result = await CountryService.GetCountriesAsync(new CountryFilter(null, null, null, 1, 5000), CancellationToken.None);
+        _alpha3Codes = result.Items
+            .Select(x => x.Alpha3Code)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToArray();
+    }
+
+    private async Task SearchAsync()
+    {
+        var filter = new PopulationFilter(_alpha3Code, _fromYear, _toYear, 1, 500);
+        var result = await PopulationService.GetPopulationByCountryAsync(filter, CancellationToken.None);
+        _populationRows = result.Items;
+    }
+}

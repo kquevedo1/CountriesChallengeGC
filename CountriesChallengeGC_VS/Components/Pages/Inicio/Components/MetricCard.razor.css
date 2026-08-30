@@ -1,0 +1,19 @@
+.metric-card {
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+}
+
+.metric-title {
+    color: #d76077;
+    font-size: 16px;
+}
+
+.metric-value {
+    font-size: 46px;
+    line-height: 1;
+}
+
+.metric-subtitle {
+    font-size: 24px;
+    color: #4e4e4e;
+}

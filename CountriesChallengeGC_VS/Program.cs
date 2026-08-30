@@ -1,11 +1,14 @@
 using CountriesChallengeGC_VS.Components;
 using CountriesChallengeGC_VS.Services;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddMudServices();
 
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<ICountryService, CountryService>();

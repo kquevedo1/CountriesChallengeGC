@@ -1,0 +1,23 @@
+<div class="picker-root">
+    <MudText Class="picker-label">@Label</MudText>
+    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.UploadFile">
+        @ButtonText
+        <InputFile OnChange="OnFileChanged" accept=".csv" style="display:none" />
+    </MudButton>
+    <MudText Class="picker-file">@(_fileName ?? "Sin archivo seleccionado")</MudText>
+</div>
+
+@code {
+    private string? _fileName;
+
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string ButtonText { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public EventCallback<IBrowserFile?> FileChanged { get; set; }
+
+    private async Task OnFileChanged(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _fileName = file?.Name;
+        await FileChanged.InvokeAsync(file);
+    }
+}
